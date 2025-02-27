@@ -32,7 +32,6 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => EmployeeBloc(getIt<EmployeeRepository>()),
         ),
-        
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

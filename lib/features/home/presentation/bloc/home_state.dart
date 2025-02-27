@@ -1,4 +1,5 @@
 import 'package:attendance_manager_app/features/attendance/domain/entities/attendance.dart';
+import 'package:attendance_manager_app/features/employee/domain/entities/employee.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class HomeState extends Equatable {
@@ -13,7 +14,11 @@ class HomeLoading extends HomeState {}
 class HomeLoaded extends HomeState {
   final List<Attendance> attendanceList;
   final DateTime selectedDate;
-  HomeLoaded(this.attendanceList, this.selectedDate);
+  final List<Employee> employees;
+  HomeLoaded(this.attendanceList, this.selectedDate, this.employees);
+
+  @override
+  List<Object> get props => [attendanceList, selectedDate, employees];
 }
 
 class HomeError extends HomeState {

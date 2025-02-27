@@ -1,6 +1,7 @@
 import 'package:attendance_manager_app/core/dl/dependency_locator.dart';
 import 'package:attendance_manager_app/features/attendance/data/repositories/attendance_repository.dart';
 import 'package:attendance_manager_app/features/attendance/presentation/blocs/attendance_bloc.dart';
+import 'package:attendance_manager_app/features/employee/data/repositories/employee_repository.dart';
 import 'package:attendance_manager_app/features/employee/domain/entities/employee.dart';
 import 'package:attendance_manager_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:attendance_manager_app/features/home/presentation/bloc/home_event.dart';
@@ -18,14 +19,13 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/home',
       builder: (context, state) {
-        final employees = state.extra as List<Employee>? ?? [];
         return BlocProvider(
           create:
               (context) => HomeBloc(
-                attendanceRepository: getIt<AttendanceRepository>(),
-                employees: employees,
-              )..add(LoadHomeData(DateTime.now())), 
-          child: HomePage(employeeNames: employees),
+                attendanceRepository: getIt(),
+                employeeRepository: getIt(),
+              )..add(LoadHomeData(DateTime.now())),
+          child: HomePage(),
         );
       },
     ),

@@ -1,4 +1,5 @@
 import 'package:attendance_manager_app/features/attendance/domain/entities/attendance.dart';
+import 'package:attendance_manager_app/features/employee/domain/entities/employee.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class HomeEvent extends Equatable {
@@ -27,4 +28,13 @@ class SaveAttendance extends HomeEvent {
   final DateTime date;
   final List<Attendance> attendanceList;
   SaveAttendance(this.date, this.attendanceList);
+}
+
+class RefreshHomeData extends HomeEvent {}
+
+class UpdateEmployees extends HomeEvent {
+  final List<Employee> employees;
+  UpdateEmployees(this.employees);
+  @override
+  List<Object> get props => [employees];
 }

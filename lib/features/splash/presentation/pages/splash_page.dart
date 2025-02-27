@@ -13,11 +13,11 @@ class SplashPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => SplashBloc(getIt<EmployeeRepository>())..add(LoadSplash()),
+      create: (_) => SplashBloc()..add(LoadSplash()),
       child: BlocListener<SplashBloc, SplashState>(
         listener: (context, state) {
           if (state is SplashLoaded) {
-            context.go('/home', extra: state.employees);
+            context.go('/home');
           }
         },
         child: Scaffold(

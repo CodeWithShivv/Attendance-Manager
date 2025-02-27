@@ -7,8 +7,7 @@ import 'splash_event.dart';
 import 'splash_state.dart';
 
 class SplashBloc extends Bloc<SplashEvent, SplashState> {
-  final EmployeeRepository _repository;
-  SplashBloc(this._repository) : super(SplashInitial()) {
+  SplashBloc() : super(SplashInitial()) {
     on<LoadSplash>(_onLoadSplash);
   }
 
@@ -16,8 +15,6 @@ class SplashBloc extends Bloc<SplashEvent, SplashState> {
     LoadSplash event,
     Emitter<SplashState> emit,
   ) async {
-    final List<Employee> employees = await _repository.fetchEmployees();
-
-    emit(SplashLoaded(employees: employees));
+    emit(SplashLoaded());
   }
 }

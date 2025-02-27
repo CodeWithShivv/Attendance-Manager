@@ -1,16 +1,20 @@
 // core/data_sources/google_sheets_data_source.dart
+import 'dart:developer';
+
+import 'package:attendance_manager_app/features/attendance/domain/entities/attendance.dart';
 import 'package:attendance_manager_app/features/employee/domain/entities/employee.dart';
 import 'package:googleapis/sheets/v4.dart' as sheets;
 import 'package:googleapis_auth/auth_io.dart';
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/intl.dart';
 
 class GoogleSheetsApi {
   late String _spreadsheetId;
   late Map<String, dynamic> _credentials;
 
   GoogleSheetsApi() {
-    _spreadsheetId = dotenv.env['SPREADSHEET_ID'] ?? '';
+    _spreadsheetId = dotenv.env['EMPLOYEE_SPREADSHEET_ID'] ?? '';
     final credentialsJson = dotenv.env['GOOGLE_CREDENTIALS'] ?? '{}';
     _credentials = jsonDecode(credentialsJson);
     if (_spreadsheetId.isEmpty || _credentials.isEmpty) {
@@ -26,22 +30,77 @@ class GoogleSheetsApi {
       );
       return sheets.SheetsApi(client);
     } catch (e) {
-      print('Error initializing Sheets API: $e');
+      log('Error initializing Sheets API: $e');
       rethrow;
     }
   }
 
-  Future<List<List<String>>> fetchAttendance(String date) async {
+  Future<List<Attendance>> fetchAttendance(String date) async {
     try {
       final api = await _getSheetsApi();
-      const range = 'Sheet1!A:D'; // Date, Employee, CheckIn, CheckOut
+      const range =
+          'Sheet1!A:E'; // Use Sheet1 for isActive, date, employee, checkIn, checkOut
+      log(
+        'Fetching attendance for date: $date, range: $range, spreadsheetId: $_spreadsheetId',
+      );
       final response = await api.spreadsheets.values.get(_spreadsheetId, range);
       final values =
           response.values?.map((e) => e.cast<String>()).toList() ?? [];
-      // Filter rows by date
-      return values.where((row) => row.isNotEmpty && row[0] == date).toList();
+      // Skip header row and filter rows by date (non-empty date in column B)
+      final dateFormat = DateFormat('yyyy-MM-dd');
+      final timeFormat = DateFormat('hh:mm a');
+
+      return values
+          .skip(1) // Skip header row
+          .where((row) => row.isNotEmpty && row[1].isNotEmpty && row[1] == date)
+          .map((row) {
+            final employeeName =
+                row[2] ??
+                ''; // Employee from column C, default to empty string if null
+            final checkInString =
+                row[3] ??
+                ''; // CheckIn from column D, default to empty string if null
+            final checkOutString =
+                row[4] ??
+                ''; // CheckOut from column E, default to empty string if null
+
+            if (employeeName.isEmpty ||
+                checkInString.isEmpty ||
+                checkOutString.isEmpty) {
+              log('Skipping invalid attendance row: $row');
+              return null; // Skip invalid rows
+            }
+
+            // Parse date
+            final parsedDate = dateFormat.parse(date);
+            // Parse times with the date
+            final checkIn = DateTime(
+              parsedDate.year,
+              parsedDate.month,
+              parsedDate.day,
+              timeFormat.parse(checkInString).hour,
+              timeFormat.parse(checkInString).minute,
+            );
+            final checkOut = DateTime(
+              parsedDate.year,
+              parsedDate.month,
+              parsedDate.day,
+              timeFormat.parse(checkOutString).hour,
+              timeFormat.parse(checkOutString).minute,
+            );
+
+            return Attendance(
+              employeeName: employeeName,
+              checkIn: checkIn,
+              checkOut: checkOut,
+              isPresent: true, // Default to true as per your app logic
+              overtimeHours: _calculateOvertime(checkIn, checkOut),
+            );
+          })
+          .whereType<Attendance>() // Filter out null values
+          .toList();
     } catch (e) {
-      print('Error fetching attendance: $e');
+      log('Error fetching attendance: $e');
       return [];
     }
   }
@@ -49,54 +108,57 @@ class GoogleSheetsApi {
   Future<void> updateAttendance(String date, List<List<dynamic>> data) async {
     try {
       final api = await _getSheetsApi();
-      const range = 'Sheet1!A:D';
+      const range = 'Sheet1!A:E'; // Define the sheet range
 
-      // Fetch existing data to determine updates
+      // Fetch existing data
       final response = await api.spreadsheets.values.get(_spreadsheetId, range);
       final existingValues =
           response.values?.map((e) => e.cast<String>()).toList() ?? [];
 
-      final updatedValues = <List<String>>[];
-      final existingForDate =
-          existingValues
-              .where((row) => row.isNotEmpty && row[0] == date)
-              .toList();
-      final otherDates =
-          existingValues
-              .where((row) => row.isNotEmpty && row[0] != date)
-              .toList();
+      // Preserve header row
+      final List<List<String>> updatedValues = [
+        ['isActive', 'date', 'employee', 'checkIn', 'checkOut'],
+      ];
 
-      // Update or add new records
-      for (var newRow in data) {
-        final employee = newRow[1] as String;
-        final existingRowIndex = existingForDate.indexWhere(
-          (row) => row[1] == employee,
-        );
-        if (existingRowIndex != -1) {
-          // Update existing row
-          updatedValues.add(newRow.cast<String>());
-        } else {
-          // Add new row
-          updatedValues.add([
-            date,
-            employee,
-            newRow[2] as String,
-            newRow[3] as String,
-          ]);
-        }
+      // Map to track existing records per employee on the given date
+      final Map<String, List<String>> attendanceMap = {};
+
+      // Populate map with existing attendance data for the given date
+      for (var row in existingValues.skip(1)) {
+        if (row.length < 5) continue; // Ensure valid row format
+        final existingDate = row[1];
+        final employee = row[2];
+        final key = '${existingDate}_$employee';
+        attendanceMap[key] = row;
       }
 
-      // Preserve rows for other dates
-      updatedValues.addAll(otherDates);
+      // Process new attendance data
+      for (var newRow in data) {
+        if (newRow.length < 3) continue; // Ensure valid new row format
 
-      // Clear and rewrite the sheet
+        final employee = (newRow[0] as String).trim();
+        final checkIn = (newRow[1] as String).trim();
+        final checkOut = (newRow[2] as String).trim();
+
+        if (employee.isEmpty || checkIn.isEmpty || checkOut.isEmpty) continue;
+
+        final key = '${date}_$employee';
+
+        // Update existing entry or add a new one
+        attendanceMap[key] = ['true', date, employee, checkIn, checkOut];
+      }
+
+      // Convert map back to a list and add to updated values
+      updatedValues.addAll(attendanceMap.values);
+
+      // Clear existing data and update with new data
       await api.spreadsheets.values.clear(
         sheets.ClearValuesRequest(),
         _spreadsheetId,
         range,
       );
 
-      if (updatedValues.isNotEmpty) {
+      if (updatedValues.length > 1) {
         final request = sheets.ValueRange(values: updatedValues);
         await api.spreadsheets.values.update(
           request,
@@ -106,7 +168,7 @@ class GoogleSheetsApi {
         );
       }
     } catch (e) {
-      print('Error updating attendance: $e');
+      log('Error updating attendance: $e');
       rethrow;
     }
   }
@@ -114,65 +176,106 @@ class GoogleSheetsApi {
   Future<List<Employee>> fetchEmployees() async {
     try {
       final api = await _getSheetsApi();
-      const range = 'Sheet1!A:B'; // A: Name, B: isActive
+      const range =
+          'Sheet1!A:C'; // Fetch only isActive, date, employee (no attendance data)
       final response = await api.spreadsheets.values.get(_spreadsheetId, range);
 
       if (response.values == null) return [];
 
-      return response.values!
-          .map(
-            (row) => Employee(
-              name: row[0].toString(),
-              isActive: row.length > 1 ? row[1] == 'true' : true,
-              id: null,
-            ),
-          )
-          .where((employee) => employee.name.isNotEmpty && employee.isActive)
-          .toList();
+      final employees =
+          response.values!
+              .skip(1) // Skip header row
+              .where(
+                (row) => row.isNotEmpty && row.length >= 3,
+              ) // Ensure row is valid
+              .map((row) {
+                final isActive = _parseIsActive(
+                  row[0],
+                ); // Safely parse isActive from column A
+                final employeeName = _parseEmployeeName(
+                  row[2],
+                ); // Safely parse employee name from column C
+                if (!isActive || employeeName.isEmpty) {
+                  return null; // Skip invalid rows
+                }
+
+                return Employee(
+                  name: employeeName,
+                  isActive: isActive,
+                  id: null,
+                );
+              })
+              .whereType<Employee>() // Filter out null values
+              .toList();
+
+      // log('Fetched employees: $employees');
+      return employees;
     } catch (e) {
-      print('Error fetching employees: $e');
+      // log('Error fetching employees: $e');
       return [];
     }
+  }
+
+  // Helper method to parse isActive safely
+  bool _parseIsActive(Object? value) {
+    final strValue = (value as String?)?.trim().toLowerCase() ?? 'false';
+    return strValue == 'true';
+  }
+
+  // Helper method to parse employee name safely
+  String _parseEmployeeName(Object? value) {
+    return (value as String?)?.trim() ?? '';
   }
 
   Future<void> addEmployee(String employeeName) async {
     try {
       final api = await _getSheetsApi();
-      const range = 'Sheet1!A:B';
-      final request = sheets.ValueRange(
-        values: [
-          [employeeName, 'true'], // Add as active
-        ],
-      );
-      await api.spreadsheets.values.append(
-        request,
-        _spreadsheetId,
-        range,
-        valueInputOption: 'RAW',
-      );
-    } catch (e) {
-      print('Error adding employee: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> removeEmployee(String employeeName) async {
-    try {
-      final api = await _getSheetsApi();
-      const range = 'Sheet1!A:B';
+      const range = 'Sheet1!A:E'; // Use full range for consistency
       final response = await api.spreadsheets.values.get(_spreadsheetId, range);
+      final existingValues =
+          response.values?.map((e) => e.cast<String>()).toList() ?? [];
 
-      if (response.values == null) return;
+      final updatedValues = <List<String>>[];
+      bool employeeExists = false;
 
-      final updatedValues =
-          response.values!.map((row) {
-            if (row.isNotEmpty && row[0] == employeeName) {
-              return [row[0], 'false']; // Mark as inactive
+      // Preserve header
+      updatedValues.add([
+        'isActive',
+        'date',
+        'employee',
+        'checkIn',
+        'checkOut',
+      ]);
+
+      // Check if employee already exists (case-insensitive), handle null/empty
+      final normalizedEmployeeName = employeeName.trim().toLowerCase();
+      for (var row in existingValues.skip(1)) {
+        // Skip header
+        if (row.isNotEmpty && row.length > 2) {
+          final employeeInRow =
+              row[2].trim() ?? ''; // Employee name from column C
+          if (employeeInRow.isNotEmpty &&
+              employeeInRow.toLowerCase() == normalizedEmployeeName &&
+              row[1].isEmpty) {
+            if (row[0].toLowerCase() != 'true') {
+              // Update to active if inactive
+              updatedValues.add(['true', '', employeeInRow, '', '']);
+            } else {
+              updatedValues.add(row); // Keep as is if already active
             }
-            return row.length > 1
-                ? row
-                : [row[0], 'true']; // Ensure all rows have isActive
-          }).toList();
+            employeeExists = true;
+          } else {
+            updatedValues.add(row);
+          }
+        } else {
+          updatedValues.add(row); // Preserve incomplete rows
+        }
+      }
+
+      if (!employeeExists && normalizedEmployeeName.isNotEmpty) {
+        // Add new employee if not found
+        updatedValues.add(['true', '', normalizedEmployeeName, '', '']);
+      }
 
       await api.spreadsheets.values.update(
         sheets.ValueRange(values: updatedValues),
@@ -181,8 +284,86 @@ class GoogleSheetsApi {
         valueInputOption: 'RAW',
       );
     } catch (e) {
-      print('Error removing employee: $e');
+      log('Error adding employee: $e');
       rethrow;
     }
+  }
+
+  // core/data_sources/google_sheets_data_source.dart
+  Future<void> removeEmployee(String employeeName) async {
+    try {
+      final api = await _getSheetsApi();
+      const range = 'Sheet1!A:E';
+      final response = await api.spreadsheets.values.get(_spreadsheetId, range);
+
+      if (response.values == null) return;
+
+      final updatedValues = <List<String>>[];
+      // Preserve header
+      updatedValues.add([
+        'isActive',
+        'date',
+        'employee',
+        'checkIn',
+        'checkOut',
+      ]);
+
+      final existingValues = response.values!.skip(1).toList(); // Skip header
+
+      // Update employee rows to mark as inactive, preserve attendance rows
+      final normalizedEmployeeName = employeeName.trim().toLowerCase();
+      for (var row in existingValues) {
+        if (row.isNotEmpty && row.length > 2) {
+          final employeeInRow =
+              (row[2] as String?)?.trim() ?? ''; // Employee name from column C
+          final dateValue =
+              (row[1] as String?)?.trim() ??
+              ''; // Date from column B, cast to String?
+          if (employeeInRow.isNotEmpty &&
+              employeeInRow.toLowerCase() == normalizedEmployeeName &&
+              dateValue.isEmpty) {
+            updatedValues.add([
+              'false',
+              '',
+              employeeInRow,
+              '',
+              '',
+            ]); // Mark as inactive for employee rows
+          } else {
+            // Cast row to List<String> and handle potential null values
+            final castRow =
+                row
+                    .map((value) => (value as String?)?.toString() ?? '')
+                    .cast<String>()
+                    .toList();
+            updatedValues.add(castRow); // Keep attendance rows unchanged
+          }
+        } else {
+          // Handle incomplete rows by casting and preserving them
+          final castRow =
+              row
+                  .map((value) => (value as String?)?.toString() ?? '')
+                  .cast<String>()
+                  .toList();
+          updatedValues.add(castRow); // Preserve incomplete rows
+        }
+      }
+
+      await api.spreadsheets.values.update(
+        sheets.ValueRange(values: updatedValues),
+        _spreadsheetId,
+        range,
+        valueInputOption: 'RAW',
+      );
+    } catch (e) {
+      log('Error removing employee: $e');
+      rethrow;
+    }
+  }
+
+  // Helper method to calculate overtime
+  double _calculateOvertime(DateTime checkIn, DateTime checkOut) {
+    final hoursWorked = checkOut.difference(checkIn).inMinutes / 60.0;
+    return hoursWorked > 9 ? hoursWorked - 9 : 0.0;
   }
 }

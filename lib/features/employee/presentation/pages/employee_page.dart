@@ -1,6 +1,8 @@
+import 'package:attendance_manager_app/core/navigation/app_router.dart';
 import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_bloc.dart';
 import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_event.dart';
 import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_state.dart';
+import 'package:attendance_manager_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,7 +14,15 @@ class EmployeePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Employee Management')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            appRouter.pop();
+          },
+        ),
+        title: Text('Employee Management'),
+      ),
       body: Column(
         children: [
           Padding(

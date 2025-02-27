@@ -1,18 +1,19 @@
 // features/home/presentation/screens/home_page.dart
+import 'dart:developer';
+
+import 'package:attendance_manager_app/core/navigation/app_router.dart';
 import 'package:attendance_manager_app/features/attendance/domain/entities/attendance.dart';
-import 'package:attendance_manager_app/features/employee/domain/entities/employee.dart';
+import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_bloc.dart';
+import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_state.dart';
 import 'package:attendance_manager_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:attendance_manager_app/features/home/presentation/bloc/home_event.dart';
 import 'package:attendance_manager_app/features/home/presentation/bloc/home_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatelessWidget {
-  final List<Employee> employeeNames;
-
-  const HomePage({super.key, required this.employeeNames});
+  const HomePage({super.key});
 
   void _showNavigationSheet(BuildContext context) {
     showModalBottomSheet(
@@ -30,16 +31,16 @@ class HomePage extends StatelessWidget {
                 leading: const Icon(Icons.people),
                 title: const Text("Manage Employees"),
                 onTap: () {
-                  Navigator.pop(context);
-                  context.go('/employees');
+                  appRouter.pop();
+                  appRouter.push('/employees');
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.event_note),
                 title: const Text("View Attendance"),
                 onTap: () {
-                  Navigator.pop(context);
-                  context.go('/attendance');
+                  appRouter.pop();
+                  appRouter.push('/attendance');
                 },
               ),
             ],
@@ -92,99 +93,120 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Attendance Manager")),
+      appBar: AppBar(
+        title: const Text("Attendance Manager"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              context.read<HomeBloc>().add(RefreshHomeData());
+            },
+            tooltip: 'Refresh',
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: BlocBuilder<HomeBloc, HomeState>(
-          builder: (context, state) {
-            if (state is HomeLoading) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is HomeError) {
-              return Center(child: Text(state.message));
-            } else if (state is HomeLoaded) {
-              return Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Date: ${DateFormat('yyyy-MM-dd').format(state.selectedDate)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+        child: BlocListener<EmployeeBloc, EmployeeState>(
+          listener: (context, state) {
+            if (state is EmployeeLoaded) {
+              context.read<HomeBloc>().add(RefreshHomeData());
+            }
+          },
+          child: BlocBuilder<HomeBloc, HomeState>(
+            builder: (context, state) {
+              if (state is HomeLoading) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (state is HomeError) {
+                return Center(child: Text(state.message));
+              } else if (state is HomeLoaded) {
+                return Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Date: ${DateFormat('yyyy-MM-dd').format(state.selectedDate)}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      ElevatedButton(
-                        onPressed:
-                            () => _selectDate(context, state.selectedDate),
-                        child: const Text('Select Date'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: state.attendanceList.length,
-                      itemBuilder: (context, index) {
-                        final attendance = state.attendanceList[index];
-                        return Card(
-                          child: ListTile(
-                            title: Text(attendance.employeeName),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TextButton(
-                                  onPressed:
-                                      () => _selectTime(
-                                        context,
-                                        attendance,
-                                        true,
-                                      ),
-                                  child: Text(
-                                    'In: ${DateFormat('hh:mm a').format(attendance.checkIn)}',
+                        ElevatedButton(
+                          onPressed:
+                              () => _selectDate(context, state.selectedDate),
+                          child: const Text('Select Date'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: state.attendanceList.length,
+                        itemBuilder: (context, index) {
+                          log(
+                            "attendance list" + state.attendanceList.toString(),
+                          );
+                          final attendance = state.attendanceList[index];
+                          return Card(
+                            child: ListTile(
+                              title: Text(attendance.employeeName),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  TextButton(
+                                    onPressed:
+                                        () => _selectTime(
+                                          context,
+                                          attendance,
+                                          true,
+                                        ),
+                                    child: Text(
+                                      'In: ${DateFormat('hh:mm a').format(attendance.checkIn)}',
+                                    ),
                                   ),
-                                ),
-                                TextButton(
-                                  onPressed:
-                                      () => _selectTime(
-                                        context,
-                                        attendance,
-                                        false,
-                                      ),
-                                  child: Text(
-                                    'Out: ${DateFormat('hh:mm a').format(attendance.checkOut)}',
+                                  TextButton(
+                                    onPressed:
+                                        () => _selectTime(
+                                          context,
+                                          attendance,
+                                          false,
+                                        ),
+                                    child: Text(
+                                      'Out: ${DateFormat('hh:mm a').format(attendance.checkOut)}',
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  'OT: ${attendance.overtimeHours.toStringAsFixed(1)}h',
-                                ),
-                              ],
+                                  Text(
+                                    'OT: ${attendance.overtimeHours.toStringAsFixed(1)}h',
+                                  ),
+                                ],
+                              ),
+                              trailing: Text(
+                                attendance.isPresent ? 'Present' : 'Absent',
+                              ),
                             ),
-                            trailing: Text(
-                              attendance.isPresent ? 'Present' : 'Absent',
-                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<HomeBloc>().add(
+                          SaveAttendance(
+                            state.selectedDate,
+                            state.attendanceList,
                           ),
                         );
                       },
+                      child: const Text('Update Attendance'),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<HomeBloc>().add(
-                        SaveAttendance(
-                          state.selectedDate,
-                          state.attendanceList,
-                        ),
-                      );
-                    },
-                    child: const Text('Update Attendance'),
-                  ),
-                ],
-              );
-            }
-            return const Center(child: Text("No data available"));
-          },
+                  ],
+                );
+              }
+              return const Center(child: Text("No data available"));
+            },
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
