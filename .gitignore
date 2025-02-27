@@ -1,0 +1,54 @@
+# Flutter/Dart specific
+*.g.dart
+*.freezed.dart
+*.gr.dart
+*.mocks.dart
+*.dart_tool/
+*.idea/
+*.iml
+*.ipr
+*.iws
+*.key
+*.keystore
+*.jks
+*.log
+*.lock
+*.packages
+*.flutter-plugins
+*.flutter-plugins-dependencies
+build/
+flutter_*.png
+flutter_*.svg
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android specific
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/*.keystore
+android/*.jks
+
+# iOS specific
+ios/.DS_Store
+ios/Pods/
+ios/Podfile.lock
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+
+# Environment files
+.env
+assets/.env 
+
+# Miscellaneous
+*.DS_Store
+*.swp
+*.zip
+*.rar
+*.tar.gz
