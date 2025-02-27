@@ -1,3 +1,4 @@
+import 'package:attendance_manager_app/features/employee/domain/entities/employee.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class EmployeeEvent extends Equatable {

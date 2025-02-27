@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:attendance_manager_app/features/employee/data/repositories/employee_repository.dart';
 import 'package:attendance_manager_app/features/employee/domain/entities/employee.dart';
 import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_event.dart';
@@ -52,6 +54,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       emit(EmployeeLoading());
       await repository.removeEmployee(event.employeeName);
       final updatedEmployees = await repository.fetchEmployees();
+      log("updatedEmployees: " + updatedEmployees.toString());
       emit(EmployeeLoaded(updatedEmployees));
     } catch (e) {
       emit(EmployeeError('Failed to remove employee: $e'));

@@ -38,3 +38,10 @@ class UpdateEmployees extends HomeEvent {
   @override
   List<Object> get props => [employees];
 }
+
+class PageChangedEvent extends HomeEvent {
+  final int pageIndex;
+  PageChangedEvent({this.pageIndex = 0});
+  @override
+  List<Object> get props => [pageIndex];
+}

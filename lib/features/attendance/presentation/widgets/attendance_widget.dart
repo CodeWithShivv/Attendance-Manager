@@ -1,8 +1,162 @@
+import 'package:attendance_manager_app/features/attendance/domain/entities/attendance.dart';
+import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_bloc.dart';
+import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_event.dart';
+import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_state.dart';
+import 'package:attendance_manager_app/features/home/presentation/bloc/home_bloc.dart';
+import 'package:attendance_manager_app/features/home/presentation/bloc/home_event.dart';
+import 'package:attendance_manager_app/features/home/presentation/bloc/home_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart' show DateFormat;
 
 class AttendanceWidget extends StatelessWidget {
+  const AttendanceWidget({super.key});
+
+  static Future<void> _selectDate(
+    BuildContext context,
+    DateTime currentDate,
+  ) async {
+    final bloc = context.read<HomeBloc>();
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: currentDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null && picked != currentDate) {
+      bloc.add(UpdateDate(picked));
+    }
+  }
+
+  static Future<void> _selectTime(
+    BuildContext context,
+    Attendance attendance,
+    bool isCheckIn,
+  ) async {
+    final bloc = context.read<HomeBloc>();
+    final currentState = bloc.state;
+    if (currentState is! HomeLoaded) return;
+
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(
+        isCheckIn ? attendance.checkIn : attendance.checkOut,
+      ),
+    );
+    if (picked != null) {
+      final newDateTime = DateTime(
+        currentState.selectedDate.year,
+        currentState.selectedDate.month,
+        currentState.selectedDate.day,
+        picked.hour,
+        picked.minute,
+      );
+      bloc.add(UpdateCheckTime(attendance, newDateTime, isCheckIn));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: BlocListener<HomeBloc, HomeState>(
+        listener: (context, state) {
+          if (state is HomeLoaded) {
+            context.read<EmployeeBloc>().add(FetchEmployees());
+          }
+        },
+        child: BlocBuilder<HomeBloc, HomeState>(
+          builder: (context, state) {
+            if (state is HomeLoading) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is HomeError) {
+              return Center(child: Text(state.message));
+            } else if (state is HomeLoaded) {
+              return Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Date: ${DateFormat('yyyy-MM-dd').format(state.selectedDate)}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed:
+                            () => _selectDate(context, state.selectedDate),
+                        child: const Text('Select Date'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: state.attendanceList.length,
+                      itemBuilder: (context, index) {
+                        final attendance = state.attendanceList[index];
+                        return Card(
+                          child: ListTile(
+                            title: Text(attendance.employeeName),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TextButton(
+                                  onPressed:
+                                      () => _selectTime(
+                                        context,
+                                        attendance,
+                                        true,
+                                      ),
+                                  child: Text(
+                                    'In: ${DateFormat('hh:mm a').format(attendance.checkIn)}',
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed:
+                                      () => _selectTime(
+                                        context,
+                                        attendance,
+                                        false,
+                                      ),
+                                  child: Text(
+                                    'Out: ${DateFormat('hh:mm a').format(attendance.checkOut)}',
+                                  ),
+                                ),
+                                Text(
+                                  'OT: ${attendance.overtimeHours.toStringAsFixed(1)}h',
+                                ),
+                              ],
+                            ),
+                            trailing: Text(
+                              attendance.isPresent ? 'Present' : 'Absent',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<HomeBloc>().add(
+                        SaveAttendance(
+                          state.selectedDate,
+                          state.attendanceList,
+                        ),
+                      );
+                    },
+                    child: const Text('Update Attendance'),
+                  ),
+                ],
+              );
+            }
+            return const Center(child: Text("No data available"));
+          },
+        ),
+      ),
+    );
   }
 }

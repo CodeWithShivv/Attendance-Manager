@@ -208,21 +208,17 @@ class GoogleSheetsApi {
               .whereType<Employee>() // Filter out null values
               .toList();
 
-      // log('Fetched employees: $employees');
       return employees;
     } catch (e) {
-      // log('Error fetching employees: $e');
       return [];
     }
   }
 
-  // Helper method to parse isActive safely
   bool _parseIsActive(Object? value) {
     final strValue = (value as String?)?.trim().toLowerCase() ?? 'false';
     return strValue == 'true';
   }
 
-  // Helper method to parse employee name safely
   String _parseEmployeeName(Object? value) {
     return (value as String?)?.trim() ?? '';
   }
@@ -289,7 +285,6 @@ class GoogleSheetsApi {
     }
   }
 
-  // core/data_sources/google_sheets_data_source.dart
   Future<void> removeEmployee(String employeeName) async {
     try {
       final api = await _getSheetsApi();

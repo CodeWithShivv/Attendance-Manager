@@ -1,6 +1,4 @@
-// features/home/presentation/bloc/home_bloc.dart
 import 'dart:developer';
-
 import 'package:attendance_manager_app/features/attendance/data/repositories/attendance_repository.dart';
 import 'package:attendance_manager_app/features/attendance/domain/entities/attendance.dart';
 import 'package:attendance_manager_app/features/employee/data/repositories/employee_repository.dart';
@@ -22,7 +20,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<UpdateCheckTime>(_updateCheckTime);
     on<SaveAttendance>(_saveAttendance);
     on<RefreshHomeData>(_refreshHomeData);
-    on<UpdateEmployees>(_updateEmployees); // New handler
+    on<UpdateEmployees>(_updateEmployees);
   }
 
   Future<void> _loadAttendance(
@@ -35,7 +33,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final attendanceRecords = await attendanceRepository.fetchAttendance(
         date,
       );
-      log("Fetched attendance records: $attendanceRecords");
 
       // Create a map of existing attendance by employee name (case-insensitive)
       final attendanceMap = {

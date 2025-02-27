@@ -1,12 +1,9 @@
 // main.dart
 import 'package:attendance_manager_app/core/navigation/app_router.dart';
 import 'package:attendance_manager_app/core/dl/dependency_locator.dart';
-import 'package:attendance_manager_app/features/attendance/data/repositories/attendance_repository.dart';
-import 'package:attendance_manager_app/features/attendance/presentation/blocs/attendance_bloc.dart';
 import 'package:attendance_manager_app/features/employee/data/repositories/employee_repository.dart';
 import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_bloc.dart';
-import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_event.dart';
-import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_state.dart';
+import 'package:attendance_manager_app/features/home/presentation/cubit/home_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart' show dotenv;
@@ -32,6 +29,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => EmployeeBloc(getIt<EmployeeRepository>()),
         ),
+        BlocProvider(create: (context) => HomeCubit()),
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

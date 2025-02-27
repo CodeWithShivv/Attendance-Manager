@@ -1,4 +1,5 @@
 import 'package:attendance_manager_app/features/employee/domain/entities/employee.dart';
+import 'package:attendance_manager_app/features/home/presentation/bloc/home_event.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class EmployeeState extends Equatable {

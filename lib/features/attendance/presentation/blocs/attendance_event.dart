@@ -16,3 +16,4 @@ class UpdateAttendance extends AttendanceEvent {
   final List<Attendance> attendanceList;
   UpdateAttendance(this.date, this.attendanceList);
 }
+
