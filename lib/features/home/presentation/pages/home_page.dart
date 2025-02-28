@@ -1,6 +1,3 @@
-// features/home/presentation/screens/home_page.dart
-import 'dart:developer';
-
 import 'package:attendance_manager_app/core/navigation/app_router.dart';
 import 'package:attendance_manager_app/features/attendance/domain/entities/attendance.dart';
 import 'package:attendance_manager_app/features/attendance/presentation/widgets/attendance_widget.dart';

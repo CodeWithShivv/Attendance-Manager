@@ -1,4 +1,5 @@
-// features/home/presentation/widgets/bottom_nav_bar.dart
+import 'package:attendance_manager_app/features/home/presentation/bloc/home_bloc.dart';
+import 'package:attendance_manager_app/features/home/presentation/bloc/home_event.dart';
 import 'package:attendance_manager_app/features/home/presentation/cubit/home_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,8 +12,11 @@ class BottomNavBar extends StatelessWidget {
     return BlocBuilder<HomeCubit, int>(
       builder: (context, selectedIndex) {
         return BottomNavigationBar(
-          currentIndex: selectedIndex, // Highlight the selected item
+          currentIndex: selectedIndex,
           onTap: (index) {
+            if (index == 0) {
+              context.read<HomeBloc>().add(LoadHomeData(DateTime.now()));
+            }
             context.read<HomeCubit>().changePage(index);
           },
           items: const [
@@ -25,8 +29,8 @@ class BottomNavBar extends StatelessWidget {
               label: 'Employees',
             ),
           ],
-          selectedItemColor: Colors.blue, // Color for the selected item
-          unselectedItemColor: Colors.grey, // Color for unselected items
+          selectedItemColor: Colors.blue,
+          unselectedItemColor: Colors.grey,
         );
       },
     );

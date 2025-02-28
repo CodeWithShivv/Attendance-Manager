@@ -285,78 +285,103 @@ class GoogleSheetsApi {
     }
   }
 
+  // core/data_sources/google_sheets_data_source.dart
   Future<void> removeEmployee(String employeeName) async {
     try {
       final api = await _getSheetsApi();
       const range = 'Sheet1!A:E';
       final response = await api.spreadsheets.values.get(_spreadsheetId, range);
 
-      if (response.values == null) return;
+      if (response.values == null || response.values!.isEmpty) {
+        log('No data found in Sheet1 for removal.');
+        return;
+      }
 
-      final updatedValues = <List<String>>[];
-      // Preserve header
-      updatedValues.add([
-        'isActive',
-        'date',
-        'employee',
-        'checkIn',
-        'checkOut',
-      ]);
-
-      final existingValues = response.values!.skip(1).toList(); // Skip header
-
-      // Update employee rows to mark as inactive, preserve attendance rows
       final normalizedEmployeeName = employeeName.trim().toLowerCase();
-      for (var row in existingValues) {
-        if (row.isNotEmpty && row.length > 2) {
-          final employeeInRow =
-              (row[2] as String?)?.trim() ?? ''; // Employee name from column C
-          final dateValue =
-              (row[1] as String?)?.trim() ??
-              ''; // Date from column B, cast to String?
-          if (employeeInRow.isNotEmpty &&
-              employeeInRow.toLowerCase() == normalizedEmployeeName &&
-              dateValue.isEmpty) {
-            updatedValues.add([
-              'false',
-              '',
-              employeeInRow,
-              '',
-              '',
-            ]); // Mark as inactive for employee rows
-          } else {
-            // Cast row to List<String> and handle potential null values
-            final castRow =
-                row
-                    .map((value) => (value as String?)?.toString() ?? '')
-                    .cast<String>()
-                    .toList();
-            updatedValues.add(castRow); // Keep attendance rows unchanged
-          }
-        } else {
-          // Handle incomplete rows by casting and preserving them
+      final uniqueRows =
+          <
+            String,
+            List<String>
+          >{}; // Map to deduplicate rows by employee-date key
+      bool employeeFound = false; // Track if the employee exists in Sheet1
+
+      // Preserve header
+      final updatedValues = [
+        ['isActive', 'date', 'employee', 'checkIn', 'checkOut'],
+      ];
+
+      // Process each row: remove matching rows, preserve others
+      for (var row in response.values!.skip(1)) {
+        if (row.length < 3) {
+          // Handle incomplete rows
           final castRow =
               row
                   .map((value) => (value as String?)?.toString() ?? '')
                   .cast<String>()
                   .toList();
-          updatedValues.add(castRow); // Preserve incomplete rows
+          final key = 'incomplete_${castRow.join('_')}';
+          uniqueRows[key] = castRow;
+          log('Preserved incomplete row: $castRow');
+          continue;
+        }
+
+        final employeeInRow = (row[2] as String?)?.trim() ?? '';
+        final dateValue = (row[1] as String?)?.trim() ?? '';
+        log('Processing row: employee=$employeeInRow, date=$dateValue');
+
+        if (employeeInRow.toLowerCase() == normalizedEmployeeName) {
+          employeeFound = true; // Employee exists in Sheet1
+          log('Removed row for employee "$employeeName" (date=$dateValue).');
+        } else {
+          // Preserve non-matching rows
+          final castRow =
+              row
+                  .map((value) => (value as String?)?.toString() ?? '')
+                  .cast<String>()
+                  .toList();
+          final key =
+              dateValue.isEmpty
+                  ? '${employeeInRow.toLowerCase()}_'
+                  : '${employeeInRow.toLowerCase()}_$dateValue';
+          uniqueRows[key] = castRow;
+          log('Preserved row: employee=$employeeInRow, date=$dateValue.');
         }
       }
 
+      if (!employeeFound) {
+        log('Warning: Employee "$employeeName" not found in Sheet1.');
+        throw Exception('Employee "$employeeName" not found in Sheet1.');
+      }
+
+      // Add a new inactive employee-only row for the employee
+      uniqueRows['${normalizedEmployeeName}_'] = [
+        'false',
+        '',
+        employeeName,
+        '',
+        '',
+      ];
+      log('Added new inactive employee-only row for "$employeeName".');
+
+      // Add unique rows to updatedValues
+      updatedValues.addAll(uniqueRows.values);
+
+      // Update the sheet with the modified data
       await api.spreadsheets.values.update(
         sheets.ValueRange(values: updatedValues),
         _spreadsheetId,
         range,
         valueInputOption: 'RAW',
       );
+      log(
+        'Successfully removed employee "$employeeName" rows and marked as inactive in Sheet1.',
+      );
     } catch (e) {
-      log('Error removing employee: $e');
+      log('Error removing employee "$employeeName": $e');
       rethrow;
     }
   }
 
-  // Helper method to calculate overtime
   double _calculateOvertime(DateTime checkIn, DateTime checkOut) {
     final hoursWorked = checkOut.difference(checkIn).inMinutes / 60.0;
     return hoursWorked > 9 ? hoursWorked - 9 : 0.0;
