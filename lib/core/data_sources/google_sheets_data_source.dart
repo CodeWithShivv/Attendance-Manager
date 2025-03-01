@@ -285,7 +285,6 @@ class GoogleSheetsApi {
     }
   }
 
-  // core/data_sources/google_sheets_data_source.dart
   Future<void> removeEmployee(String employeeName) async {
     try {
       final api = await _getSheetsApi();
