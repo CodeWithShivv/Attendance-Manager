@@ -1,6 +1,17 @@
 
 The Attendance Manager App is a Flutter-based mobile application designed to streamline employee attendance management. It supports tracking attendance, managing employees, and syncing data with Google Sheets, all within a modular and maintainable architecture using modern state management and dependency injection.
 
+Screenshots
+<img width="350" alt="Screenshot 2025-03-02 at 11 57 53 AM" src="https://github.com/user-attachments/assets/e948b4c4-967d-4562-aa7b-b1d74cd58cc9" />
+<img width="360" alt="Screenshot 2025-03-02 at 11 58 06 AM" src="https://github.com/user-attachments/assets/e1741462-defc-4f1a-8556-e135344399e5" />
+<img width="360" alt="Screenshot 2025-03-02 at 11 58 15 AM" src="https://github.com/user-attachments/assets/736f7652-77dd-431c-ab77-64a4dc19e370" />
+
+
+https://github.com/user-attachments/assets/e4b53001-3578-4e67-b085-2fa98447ca6a
+
+
+
+
 Table of Contents
 Features
 Architecture
