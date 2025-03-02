@@ -1,5 +1,5 @@
 
-# The Attendance Manager App is a Flutter-based mobile application for managing employee attendance. It enables users to track attendance, manage employees, and sync data with Google Sheets. The app is built with a modular architecture, leveraging modern state management and dependency injection for maintainability.
+The Attendance Manager App is a Flutter-based mobile application designed to streamline employee attendance management. It supports tracking attendance, managing employees, and syncing data with Google Sheets, all within a modular and maintainable architecture using modern state management and dependency injection.
 
 Table of Contents
 Features
@@ -9,106 +9,29 @@ Dependencies
 Setup and Installation
 Contributing
 License
+
+
+
 Features
-Add/remove employees with swipe-to-delete and undo functionality.
-Track attendance with check-in/out times and automatic overtime calculation.
-Sync attendance data with Google Sheets.
-Modern UI with slivers, skeleton loading, and smooth keyboard handling.
-Bottom navigation to switch between Attendance and Employee pages.
+Add or remove employees using a swipe-to-delete gesture with an undo option.
+Track employee attendance, including check-in/out times, with automatic overtime calculation.
+Synchronize attendance data with Google Sheets for persistence.
+Clean UI with slivers, skeleton loading effects, and intuitive keyboard handling.
+Bottom navigation bar to toggle between Attendance and Employee sections.
 Architecture
-The app follows a Clean Architecture approach with three layers:
+The app is structured using Clean Architecture, divided into three layers:
 
-Presentation Layer: UI components like pages (attendance_page.dart, employee_page.dart) and widgets (bottom_nav_bar.dart).
-Domain Layer: Business logic and entities (attendance.dart, employee.dart).
-Data Layer: Data operations, including Google Sheets integration via attendance_repository_impl.dart.
-State management is handled with flutter_bloc, using EmployeeBloc for employee actions, HomeBloc for attendance, and HomeCubit for navigation. get_it is used for dependency injection to manage repositories and blocs.
+Presentation Layer: Contains UI elements such as pages (attendance_page.dart, employee_page.dart) and widgets (bottom_nav_bar.dart).
+Domain Layer: Houses business logic and entities (attendance.dart, employee.dart), independent of external frameworks.
+Data Layer: Manages data operations, including Google Sheets integration through attendance_repository_impl.dart.
+For state management, the app uses flutter_bloc with:
 
-The file structure is feature-based:
-
-
-lib/
-├── features/
-│   ├── attendance/
-│   │   ├── data/
-│   │   ├── domain/
-│   │   └── presentation/
-│   ├── employee/
-│   │   ├── data/
-│   │   ├── domain/
-│   │   └── presentation/
-│   ├── home/
-│   │   └── presentation/
-│   └── splash/
-│       └── presentation/
-├── main.dart
-└── assets/
-└── .env
-
-Implementation Details
-Navigation:
-HomePage uses IndexedStack and HomeCubit for bottom navigation between AttendancePage and EmployeePage.
-Features a standard AppBar with the title "Attendance Manager".
-BottomNavBar is styled with rounded corners and shadows.
-Employee Management (EmployeePage):
-Add/remove employees with a TextField and swipe-to-delete (Dismissible).
-Keyboard closes on "Done", tap outside (GestureDetector), or after adding.
-Uses CustomScrollView with slivers for smooth scrolling.
-EmployeeBloc manages states (EmployeeAdding, EmployeeLoaded).
-Attendance Management (AttendancePage):
-Select dates and times with DateSelectorWidget and AttendanceListItem.
-Save attendance to Google Sheets via HomeBloc.
-Uses slivers and skeleton loading (skeletonizer).
-Google Sheets Integration:
-AttendanceRepositoryImpl handles fetching and updating records.
-Default records (9 AM to 6 PM) are created if no data exists.
-UI:
-Cards with elevation and rounded corners for list items.
-Dialogs (AlertDialogWidget) for loading states.
-Skeleton loading for better UX during data fetching.
-Dependencies
-flutter_bloc: ^8.1.3: State management.
-googleapis: ^11.1.0 \& googleapis_auth: ^1.4.0: Google Sheets integration.
-skeletonizer: ^1.4.3: Skeleton loading.
-get_it: ^8.0.3: Dependency injection.
-intl: ^0.18.1: Date/time formatting.
-freezed: ^2.4.1 \& json_serializable: ^6.7.1: Code generation.
-Setup and Installation
-Clone the Repository:
-bash
-Wrap
-Copy
-git clone https://github.com/yourusername/attendance_manager_app.git
-cd attendance_manager_app
-Install Dependencies:
-bash
-Wrap
-Copy
-flutter pub get
-Generate Code:
-bash
-Wrap
-Copy
-flutter pub run build_runner build --delete-conflicting-outputs
-Set Up Google Sheets API:
-Enable Google Sheets API in Google Cloud Console.
-Add credentials to assets/.env.
-Run the App:
-bash
-Wrap
-Copy
-flutter run
-Contributing
-Fork the repository.
-Create a branch (git checkout -b feature/your-feature).
-Commit changes (git commit -m "Add your feature").
-Push to the branch (git push origin feature/your-feature).
-Open a Pull Request.
-License
-This project is licensed under the MIT License - see the LICENSE file for details.
+EmployeeBloc for handling employee-related actions.
+HomeBloc for managing attendance data.
+HomeCubit for navigation state.
+Dependency injection is implemented with get_it to manage repositories and blocs efficiently.
 
 
-
-==========================
 
 A Flutter-based mobile application designed to manage employee attendance efficiently. It allows users to track attendance, manage employees, and sync data with Google Sheets.
 
