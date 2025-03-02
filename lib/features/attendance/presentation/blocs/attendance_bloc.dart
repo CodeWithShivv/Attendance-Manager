@@ -1,6 +1,3 @@
-// features/attendance/presentation/blocs/attendance_bloc.dart
-import 'dart:developer';
-
 import 'package:attendance_manager_app/features/attendance/data/repositories/attendance_repository.dart';
 import 'package:attendance_manager_app/features/attendance/domain/entities/attendance.dart';
 import 'package:attendance_manager_app/features/attendance/presentation/blocs/attendance_event.dart';
@@ -10,8 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
   final AttendanceRepository repository;
-  final List<Employee> employee; // Pass this from outside (e.g., EmployeeBloc)
-
+  final List<Employee> employee; 
   AttendanceBloc(this.repository, this.employee) : super(AttendanceInitial()) {
     on<LoadAttendance>((event, emit) async {
       emit(AttendanceLoading());

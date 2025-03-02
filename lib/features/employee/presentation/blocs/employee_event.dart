@@ -25,3 +25,10 @@ class RemoveEmployee extends EmployeeEvent {
 }
 
 class FetchEmployees extends EmployeeEvent {}
+
+class EmployeeUpdated extends EmployeeEvent {
+  final List<Employee> employees;
+  EmployeeUpdated(this.employees);
+  @override
+  List<Object> get props => [employees];
+}

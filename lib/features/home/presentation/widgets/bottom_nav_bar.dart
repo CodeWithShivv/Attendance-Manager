@@ -14,9 +14,6 @@ class BottomNavBar extends StatelessWidget {
         return BottomNavigationBar(
           currentIndex: selectedIndex,
           onTap: (index) {
-            if (index == 0) {
-              context.read<HomeBloc>().add(LoadHomeData(DateTime.now()));
-            }
             context.read<HomeCubit>().changePage(index);
           },
           items: const [

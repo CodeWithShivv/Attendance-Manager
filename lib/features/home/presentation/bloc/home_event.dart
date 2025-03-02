@@ -8,8 +8,10 @@ abstract class HomeEvent extends Equatable {
 }
 
 class LoadHomeData extends HomeEvent {
-  final DateTime date;
-  LoadHomeData(this.date);
+
+  final List<Employee>? employees;
+  LoadHomeData({this.employees});
+
 }
 
 class UpdateDate extends HomeEvent {
@@ -30,7 +32,10 @@ class SaveAttendance extends HomeEvent {
   SaveAttendance(this.date, this.attendanceList);
 }
 
-class RefreshHomeData extends HomeEvent {}
+class RefreshHomeData extends HomeEvent {
+  final List<Employee> employees;
+  RefreshHomeData(this.employees);
+}
 
 class UpdateEmployees extends HomeEvent {
   final List<Employee> employees;
@@ -38,6 +43,7 @@ class UpdateEmployees extends HomeEvent {
   @override
   List<Object> get props => [employees];
 }
+
 
 class PageChangedEvent extends HomeEvent {
   final int pageIndex;

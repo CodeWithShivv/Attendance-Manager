@@ -65,8 +65,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     final employees = await employeeRepository.fetchEmployees();
-
-    await _loadAttendance(event.date, emit, employees);
+    await _loadAttendance(DateTime.now(), emit, employees);
   }
 
   Future<void> _updateDate(UpdateDate event, Emitter<HomeState> emit) async {
@@ -112,7 +111,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (state is! HomeLoaded) return;
 
     final currentState = state as HomeLoaded;
-    emit(HomeLoading());
+    emit(HomeSavingAttendance());
     try {
       await attendanceRepository.updateAttendance(
         event.date,
@@ -124,6 +123,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               overtimeHours: attendance.calculateOvertime(),
             );
           }).toList();
+      emit(HomeSavedAttendance());
       emit(HomeLoaded(updatedRecords, event.date, currentState.employees));
     } catch (e) {
       emit(HomeError("Failed to save attendance: $e"));

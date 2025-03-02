@@ -31,3 +31,7 @@ class HomeError extends HomeState {
   @override
   List<Object> get props => [message];
 }
+
+class HomeSavingAttendance extends HomeState {}
+
+class HomeSavedAttendance extends HomeState {}

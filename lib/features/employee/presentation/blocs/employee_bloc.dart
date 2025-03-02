@@ -1,7 +1,6 @@
 import 'dart:developer';
 
 import 'package:attendance_manager_app/features/employee/data/repositories/employee_repository.dart';
-import 'package:attendance_manager_app/features/employee/domain/entities/employee.dart';
 import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_event.dart';
 import 'package:attendance_manager_app/features/employee/presentation/blocs/employee_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,17 +9,15 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   final EmployeeRepository repository;
 
   EmployeeBloc(this.repository) : super(EmployeeInitial()) {
-    on<LoadEmployees>(_onLoadEmployees);
-
-    on<AddEmployee>(_onAddEmployee);
-
-    on<RemoveEmployee>(_onRemoveEmployee);
-
+    on<LoadEmployees>(_onFetchEmployees);
     on<FetchEmployees>(_onFetchEmployees);
+    on<AddEmployee>(_onAddEmployee);
+    on<RemoveEmployee>(_onRemoveEmployee);
+    on<EmployeeUpdated>(_onEmployeeUpdated);
   }
 
-  Future<void> _onLoadEmployees(
-    LoadEmployees event,
+  Future<void> _onFetchEmployees(
+    EmployeeEvent event,
     Emitter<EmployeeState> emit,
   ) async {
     emit(EmployeeLoading());
@@ -28,7 +25,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       final employees = await repository.fetchEmployees();
       emit(EmployeeLoaded(employees));
     } catch (e) {
-      emit(EmployeeError('Failed to load employees: $e'));
+      emit(EmployeeError('Failed to fetch employees: $e'));
     }
   }
 
@@ -36,11 +33,17 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     AddEmployee event,
     Emitter<EmployeeState> emit,
   ) async {
+    emit(EmployeeAdding());
     try {
-      emit(EmployeeLoading());
       await repository.addEmployee(event.employeeName);
       final updatedEmployees = await repository.fetchEmployees();
-      emit(EmployeeLoaded(updatedEmployees));
+      emit(EmployeeStateUpdated(updatedEmployees));
+      emit(
+        EmployeeLoaded(
+          updatedEmployees,
+          successMessage: 'Employee "${event.employeeName}" added successfully',
+        ),
+      );
     } catch (e) {
       emit(EmployeeError('Failed to add employee: $e'));
     }
@@ -50,27 +53,31 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     RemoveEmployee event,
     Emitter<EmployeeState> emit,
   ) async {
+    emit(EmployeeRemoving());
     try {
-      emit(EmployeeLoading());
       await repository.removeEmployee(event.employeeName);
       final updatedEmployees = await repository.fetchEmployees();
-      log("updatedEmployees: " + updatedEmployees.toString());
-      emit(EmployeeLoaded(updatedEmployees));
+      emit(EmployeeStateUpdated(updatedEmployees));
+      emit(
+        EmployeeLoaded(
+          updatedEmployees,
+          successMessage:
+              'Employee "${event.employeeName}" removed successfully',
+        ),
+      );
     } catch (e) {
       emit(EmployeeError('Failed to remove employee: $e'));
     }
   }
 
-  Future<void> _onFetchEmployees(
-    FetchEmployees event,
+  Future<void> _onEmployeeUpdated(
+    EmployeeUpdated event,
     Emitter<EmployeeState> emit,
   ) async {
-    emit(EmployeeLoading());
     try {
-      final employees = await repository.fetchEmployees();
-      emit(EmployeeLoaded(employees));
+      emit(EmployeeLoaded(event.employees));
     } catch (e) {
-      emit(EmployeeError('Failed to fetch employees: $e'));
+      emit(EmployeeError('Failed to update employees: $e'));
     }
   }
 }
