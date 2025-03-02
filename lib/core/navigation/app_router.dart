@@ -1,4 +1,5 @@
 import 'package:attendance_manager_app/core/dl/dependency_locator.dart';
+import 'package:attendance_manager_app/features/attendance/presentation/pages/attendance_page.dart' show AttendancePage;
 import 'package:attendance_manager_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:attendance_manager_app/features/home/presentation/bloc/home_event.dart';
 import 'package:attendance_manager_app/features/home/presentation/pages/home_page.dart';
@@ -6,7 +7,6 @@ import 'package:attendance_manager_app/features/splash/presentation/pages/splash
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:attendance_manager_app/features/attendance/presentation/pages/attendance_manager.dart';
 import 'package:attendance_manager_app/features/employee/presentation/pages/employee_page.dart';
 
 final GoRouter appRouter = GoRouter(
